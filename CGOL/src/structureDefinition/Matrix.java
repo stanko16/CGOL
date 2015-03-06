@@ -13,7 +13,11 @@ public abstract class Matrix {
 	 private static int nRows;
 	 private static int nColumns;
 	 
-	 
+	 /**
+	  * Generates a void matrix, where each cell is healthy (state 0)
+	  * @param nColumns Number of columns
+	  * @param nRows Number of rows
+	  */
 	public static void GenerateVoidMatrix(int nColumns, int nRows) {
 		Matrix.initializeMatrix(nColumns, nRows);
 		for (int j = 0; j < nColumns; j++) {
@@ -24,6 +28,11 @@ public abstract class Matrix {
 		}
 	}
 	
+	/**
+	 * Generates a matrix of random-state cells
+	 * @param nColumns Number of columns
+	 * @param nRows Number of rows
+	 */
 	public static void GenerateRandomMatrix(int nColumns, int nRows){
 		Matrix.initializeMatrix(nColumns, nRows);
 		for (int j = 0; j < nColumns; j++) {
@@ -40,7 +49,11 @@ public abstract class Matrix {
 		}
 	}
 	
-	
+	/**
+	 * This method initializes a new matrix by specifying the rows and the columns
+	 * @param nColumns Number of columns
+	 * @param nRows Number of rows
+	 */
 	public static void initializeMatrix(int nColumns, int nRows){
 		Matrix.setnColumns(nColumns);
 		Matrix.setnRows(nRows);
@@ -48,7 +61,7 @@ public abstract class Matrix {
 	}
 	
 	/**
-	 * Checks the status of each cell with respect to its neighbor cells
+	 * Checks the status of each cell with respect to its neighbor cells (calls the check method on each cell of the matrix)
 	 */
 	public static void checkMatrix(){
 		for (int i = 0; i < Matrix.getnColumns(); i++) {
@@ -100,6 +113,12 @@ public abstract class Matrix {
 		return matrix;
 	}
 	 
+	/**
+	 * 
+	 * @param column the column number
+	 * @param row the row number
+	 * @return Cell returns the cell having the indicated column and row. Some if's were added in order to avoid "out of range" exceptions.
+	 */
 	public static Cell getCell(int column, int row){
 		if(column<0){
 			column=nColumns-1;
@@ -115,115 +134,17 @@ public abstract class Matrix {
 		}
 		return Matrix.getMatrix()[column][row];
 	}
-	
-	public static void setCell(int column, int row){
+	/**
+	 * Increments the state of the (clicked) cell in the specified column and row. 
+	 * @param column the column number
+	 * @param row the row number
+	 */
+	 public static void incrementCellState(int column, int row){
 		boolean b = Matrix.getMatrix()[column][row].getState();
 		if(!b){
 			Matrix.getMatrix()[column][row].setState(true);
 		} else {
 			Matrix.getMatrix()[column][row].setState(false);
-		}
-	}
-	
-	
-	/**
-	 * Matrix-->	
-	 * |		______yUp_______
-	 * |		|				|
-	 * V		|				|
-	 *	   xLeft|	subMatrix	|xRight
-	 * 			|				|
-	 * 			|_______________|
-	 * 				 yDown
-	 * 
-	 * @return subMatrix
-	 */
-	public static Boolean[][] getSubMatrix(){
-		int right=0,left=0,down= 0;
-		int up = 99999999;
-		boolean first = true;
-		for (int j = 0; j < nColumns; j++) {
-			for (int i = 0; i < nRows; i++) {
-				Cell c = Matrix.matrix[j][i];
-				if(c.getState()){
-					if (first){
-						left=c.getColumn();
-						right=c.getColumn();
-						first=false;
-						
-						if(c.getRow()>down){
-							down=c.getRow();
-						}
-						if(c.getRow()<up){
-							up=c.getRow();
-						}
-						
-					} else {
-						right=c.getColumn();
-						if(c.getRow()>down){
-							down=c.getRow();
-						}
-						if(c.getRow()<up){
-							up=c.getRow();
-						}
-					}
-				}
-			}
-		}
-		int smlength = right - left;
-		int smheight = down - up;
-
-		
-		Boolean[][] subMatrix = new Boolean[smlength+1][smheight+1];
-		for (int j = left; j < right; j++) {
-			for (int i = up; i < down; i++) {
-				subMatrix[j-left][i-up] = Matrix.matrix[j][i].getState();
-			}
-		}
-		return subMatrix;
-	}
-	
-	
-
-	public static void save(String name, Boolean[][] subMatrix){
-		try
-	      {
-			File f =new File(name+".life");
-	         FileOutputStream fileOut = new FileOutputStream(f);
-	         ObjectOutputStream out = new ObjectOutputStream(fileOut);
-	         out.writeObject(subMatrix);
-	         out.close();
-	         fileOut.close();
-	      }catch(IOException i)
-	      {
-	          i.printStackTrace();
-	      }
-	}
-	
-	public static void load(int x, int y, String path){
-		Boolean[][] subMatrix = null;
-	      try
-	      {
-	         FileInputStream fileIn = new FileInputStream(path);
-	         ObjectInputStream in = new ObjectInputStream(fileIn);
-	         subMatrix = (Boolean[][]) in.readObject();
-	         in.close();
-	         fileIn.close();
-	      }catch(IOException i)
-	      {
-	         i.printStackTrace();
-	         return;
-	      }catch(ClassNotFoundException c)
-	      {
-	         c.printStackTrace();
-	         return;
-	      }
-	      for (int j = x; j < subMatrix.length; j++) {
-			for (int i = y; i < subMatrix[0].length; i++) {
-				if (j>Matrix.getnColumns()){j-=Matrix.getnColumns();}
-				if (i>Matrix.getnRows()){i-=Matrix.getnRows();}
-				Matrix.matrix[j][i].setState(subMatrix[j-x][i-y]);
-			}
 		}
 	}
 	

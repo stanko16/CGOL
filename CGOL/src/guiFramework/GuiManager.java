@@ -12,8 +12,9 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.util.TimerTask;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -31,6 +32,8 @@ import structureDefinition.Matrix;
  *
  */
 public class GuiManager {
+	
+	//Attributes needed inside and outside the this class. Those ones needed in the classes inside this one are private, the public ones may be used outside.
 	public static Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	public static boolean condition=true;
 	private static int WIDTH = screenSize.width-5;
@@ -39,9 +42,11 @@ public class GuiManager {
 	private static Timer timer;
 	private static boolean began= false;
 	
-	private static JButton stop;
+	private static JButton stop;	
 	private static JButton step;
 	private static JButton start;
+	
+	private static JMenuItem speed;
 	
 	public static void main(String[] args) {
 
@@ -50,51 +55,32 @@ public class GuiManager {
 		cm.setBounds(0,0,WIDTH, HEIGHT);
 		cm.setPreferredSize(new Dimension(WIDTH,HEIGHT));
 		
-		cm.addMouseListener(new MouseListener(){
 
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				Point point = MouseInfo.getPointerInfo().getLocation();
-				Point point2 = cm.getLocationOnScreen();
-				int x =(int)((point.x-point2.x)/10);
-				int y =(int)((point.y-point2.y)/10);
-				if(Matrix.getCell(x, y).getState()){
-					cm.fill(x, y, Color.WHITE);
-				} else {
-					cm.fill(x, y, Color.BLACK);
-				}
-				Matrix.setCell(x, y);
-				GuiManager.repaintCanvas();
+		cm.addMouseListener(new MouseAdapter() {
+			/**
+			 * When a point in the canvas is clicked, the state of that cell increases and the color of that point is also changed
+			 */
+			public void mousePressed(MouseEvent arg0) {
+
+					//We get the x and y of the point we  pressed with respect to the canvas
+					Point point = MouseInfo.getPointerInfo().getLocation();
+					Point point2 = cm.getLocationOnScreen();
+					int x =(int)((point.x-point2.x)/10);
+					int y =(int)((point.y-point2.y)/10);
+					//based on the state, we change the color
+					if(Matrix.getCell(x, y).getState()){
+						cm.fill(x, y, Color.WHITE);
+					} else {
+						cm.fill(x, y, Color.BLACK);
+					}
+					Matrix.incrementCellState(x, y);//at the end we increment the state of the cell
+					GuiManager.repaintCanvas();
+
 			}
 
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mousePressed(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mouseReleased(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-			});
-		
+		});
 		
 		JScrollPane scroll = new JScrollPane(cm);
-		DragScrollHandler.createDragScrollHandlerFor(cm);
 		
 		step = new JButton("STEP");
 		step.addActionListener(new ActionListener() {
@@ -139,15 +125,25 @@ public class GuiManager {
 		slow.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				timer.setDelay(timer.getDelay()+40);
+				timer.setDelay(timer.getDelay() + 40);
+				if(timer.getDelay()>0) {
+					speed.setEnabled(true);
+				}
 			}
 		});
-		
-		JMenuItem speed = new JMenuItem("SpeedUp");
+
+		speed = new JMenuItem("SpeedUp");
+		if(timer.getDelay()==0) {
+			speed.setEnabled(false);
+		}else {
+			speed.setEnabled(true);
+		}
 		speed.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				timer.setDelay(timer.getDelay()-40);
+				if (timer.getDelay() > 0) {
+					timer.setDelay(timer.getDelay() - 40);
+				}
 			}
 		});
 		
@@ -194,26 +190,7 @@ public class GuiManager {
 
 			}
 		});
-		/*
-		JMenuItem save = new JMenuItem("Save structure");
-		save.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				Matrix.save(JOptionPane.showInputDialog(null,"Plase insert a name for the new structure!","Save structure",1), Matrix.getSubMatrix());
-			}
-		});
-		JMenuItem load = new JMenuItem("Load structure");
-		load.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				JFileChooser fc = new JFileChooser();
-				fc.showDialog(null, "ASDF");
-				Matrix.load(0, 0, fc.getSelectedFile().getAbsolutePath());
-				repaintCanvas();
-			}
-		});
-		*/
-		//menuBar.add(menu);
+
 		menuBar.add(operations);
 		menuBar.add(help);
 		menuBar.add(start);
@@ -222,10 +199,6 @@ public class GuiManager {
 		
 		
 		help.add(aboutitem);
-		
-		//menu.add(save);
-		//menu.add(load);
-		//menu.addSeparator();
 		
 		
 		operations.add(rand);
@@ -253,9 +226,12 @@ public class GuiManager {
 	public static void stepTimer(){checkUpdate();}
 	public static void startTimer(){timer.start();}
 	    
+	/**
+	 * The timer is set with 0 delay (full speed) and starts the updating the cells in the matrix
+	 */
 	public static void beginTimer(){
 		began=true;
-		timer = new Timer(80, new ActionListener() {
+		timer = new Timer(0, new ActionListener() {
 		      @Override
 		      public void actionPerformed(ActionEvent e) {
 		    	  checkUpdate();
@@ -264,12 +240,19 @@ public class GuiManager {
 		timer.start();
 	}
 	
+	/**
+	 * This method checks the cells in the matrix, setting the next state for each one of them and then updates their value.
+	 * Finally the canvas is repaint to see the changes.
+	 */
 	public static void checkUpdate(){
 		Matrix.checkMatrix();
 		Matrix.updateMatrix();
     	repaintCanvas();
 	}
 	
+	/**
+	 * Each cell is painted in the canvas based on it's current state.
+	 */
 	public static void repaintCanvas(){
 		for (int j = 0; j < WIDTH/10; j++) {
 			for (int i = 0; i < HEIGHT/10; i++) {
